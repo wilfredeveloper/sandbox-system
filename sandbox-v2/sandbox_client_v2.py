@@ -10,7 +10,7 @@ import time
 class SandboxClient:
     """Client for interacting with the sandbox system"""
     
-    def __init__(self, server_url: str = "http://localhost:8000"):
+    def __init__(self, server_url: str = "http://localhost:2205"):
         """
         Initialize client
         
