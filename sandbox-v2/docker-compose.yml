@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # Redis for session coordination
+  redis:
+    image: redis:7-alpine
+    container_name: sandbox-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Coordinator / Load Balancer
+  coordinator:
+    build:
+      context: .
+      dockerfile: Dockerfile.coordinator
+    container_name: sandbox-coordinator
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKERS=http://worker1:5000,http://worker2:5000,http://worker3:5000
+      - PORT=8000
+    depends_on:
+      - redis
+      - worker1
+      - worker2
+      - worker3
+    restart: unless-stopped
+
+  # Worker 1
+  worker1:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: sandbox-worker1
+    privileged: true  # Required for Docker-in-Docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Share host Docker socket
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_ID=worker1
+      - PORT=5000
+      - POOL_SIZE=5
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Worker 2
+  worker2:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: sandbox-worker2
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_ID=worker2
+      - PORT=5000
+      - POOL_SIZE=5
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Worker 3
+  worker3:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: sandbox-worker3
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_ID=worker3
+      - PORT=5000
+      - POOL_SIZE=5
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  default:
+    name: sandbox-network

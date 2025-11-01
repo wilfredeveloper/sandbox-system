@@ -61,7 +61,10 @@ def create_session():
             network_mode="none",  # No network access by default
             remove=False  # We'll remove manually
         )
-        
+
+        # Create /workspace directory in the container
+        container.exec_run("mkdir -p /workspace")
+
         active_sessions[session_id] = {
             'container': container,
             'created_at': datetime.now()

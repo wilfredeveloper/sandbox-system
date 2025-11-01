@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(taskkill //F //PID 4848)",
+      "Bash(taskkill //F //PID 25748)",
+      "Bash(uv run python:*)",
+      "Bash(curl:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

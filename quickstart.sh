@@ -27,18 +27,24 @@ fi
 
 echo "✅ uv is installed"
 
-# Check if venv exists
-if [ ! -d "venv" ]; then
-    echo "⚠️  Virtual environment not found. Creating one with uv..."
+# Check if venv exists (check both venv and .venv)
+if [ ! -d "venv" ] && [ ! -d ".venv" ]; then
+    echo "📦 Creating virtual environment with uv..."
     uv venv
 fi
 
-# Activate virtual environment
-source venv/bin/activate
+# Activate virtual environment (prefer .venv if it exists, otherwise venv)
+if [ -d ".venv" ]; then
+    echo "✅ Using existing .venv virtual environment"
+    # source .venv/bin/activate
+elif [ -d "venv" ]; then
+    echo "✅ Using existing venv virtual environment"
+    # source venv/bin/activate
+fi
 
 # Install requirements
 echo "📦 Installing Python dependencies with uv..."
-uv pip install -q -r requirements.txt
+uv sync
 
 # Build custom sandbox image (optional)
 read -p "Do you want to build a custom sandbox image with more tools? (y/n) " -n 1 -r
