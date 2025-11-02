@@ -24,7 +24,7 @@ if sys.platform == 'win32':
         pass  # Already wrapped or running in different environment
 
 class LoadTester:
-    def __init__(self, server_url="http://localhost:2205", num_workers=10, requests_per_worker=10):
+    def __init__(self, server_url="http://spinwish.tech:2205", num_workers=10, requests_per_worker=10):
         self.server_url = server_url.rstrip('/')
         self.num_workers = num_workers
         self.requests_per_worker = requests_per_worker
@@ -310,19 +310,19 @@ if __name__ == '__main__':
     import sys
 
     # Parse command line arguments
-    server_url = "http://localhost:2205"
+    server_url = "http://spinwish.tech:2205"
     workers = 10
     num_requests = 10
 
     if '--help' in sys.argv or '-h' in sys.argv:
         print("Usage: python load_test.py [OPTIONS]")
         print("\nOptions:")
-        print("  --url URL          Server URL (default: http://localhost:2205)")
+        print("  --url URL          Server URL (default: http://spinwish.tech:2205)")
         print("  --workers N        Number of concurrent workers (default: 10)")
         print("  --requests N       Requests per worker (default: 10)")
         print("\nExamples:")
         print("  python load_test.py --workers 20 --requests 5")
-        print("  python load_test.py --url http://localhost:8000 --workers 50")
+        print("  python load_test.py --url http://spinwish.tech:8000 --workers 50")
         sys.exit(0)
 
     # Parse arguments
