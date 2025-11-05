@@ -646,6 +646,7 @@ class SandboxServer:
             tar = tarfile.TarFile(fileobj=tar_stream, mode='w')
             tarinfo = tarfile.TarInfo(name=filename)
             tarinfo.size = file_size
+            tarinfo.mtime = int(time.time())
             tar.addfile(tarinfo, io.BytesIO(file_data))
             tar.close()
 
@@ -744,21 +745,29 @@ class SandboxServer:
 
             for line in lines:
                 parts = line.split()
-                if len(parts) < 8:
+                # Expect at least: perms, links, owner, group, size, date, [time], name
+                if len(parts) < 7:
                     continue
 
-                filename = parts[7]
+                filename = parts[-1]
                 if filename in ['.', '..']:
                     continue
 
+                size = int(parts[4])
+                # modified may be date only or date+time
+                if len(parts) >= 8:
+                    modified = f"{parts[5]}T{parts[6]}Z"
+                else:
+                    modified = parts[5]
+
                 file_info = {
                     'name': filename,
-                    'size_bytes': int(parts[4]),
-                    'modified': f"{parts[5]}T{parts[6]}",
+                    'size_bytes': size,
+                    'modified': modified,
                     'permissions': parts[0]
                 }
                 files.append(file_info)
-                total_size += file_info['size_bytes']
+                total_size += size
 
             # Sort by modification time (newest first)
             files.sort(key=lambda x: x['modified'], reverse=True)
@@ -1062,6 +1071,7 @@ async def upload_file(
         tar = tarfile.TarFile(fileobj=tar_stream, mode='w')
         tarinfo = tarfile.TarInfo(name=filename)
         tarinfo.size = file_size
+        tarinfo.mtime = int(time.time())
         tar.addfile(tarinfo, io.BytesIO(file_data))
         tar.close()
 
@@ -1192,21 +1202,28 @@ def list_files(session_id: str):
 
         for line in lines:
             parts = line.split()
-            if len(parts) < 9:
+            # Expect at least: perms, links, owner, group, size, date, [time], name
+            if len(parts) < 7:
                 continue
 
-            filename = parts[8]
+            filename = parts[-1]
             if filename in ['.', '..']:
                 continue
 
+            size = int(parts[4])
+            if len(parts) >= 8:
+                modified = f"{parts[5]}T{parts[6]}Z"
+            else:
+                modified = parts[5]
+
             file_info = {
                 'name': filename,
-                'size_bytes': int(parts[4]),
-                'modified': f"{parts[5]}T{parts[6]}Z",
+                'size_bytes': size,
+                'modified': modified,
                 'permissions': parts[0]
             }
             files.append(file_info)
-            total_size += file_info['size_bytes']
+            total_size += size
 
         # Sort by modification time (newest first)
         files.sort(key=lambda x: x['modified'], reverse=True)
