@@ -44,7 +44,7 @@ class SandboxClient:
 
         Args:
             mode: "local" for in-process, "remote" for HTTP
-            server_url: Required for remote mode (e.g., "http://localhost:8000")
+            server_url: Required for remote mode (e.g., "http://localhost:7575")
         """
         self.mode = mode
         self.server_url = server_url.rstrip('/') if server_url else None
@@ -425,8 +425,8 @@ if __name__ == '__main__':
         print("  remote: HTTP calls to remote server")
         print("")
         print("Default URLs for remote mode:")
-        print("  Standalone mode: http://localhost:5000 (worker directly)")
-        print("  Distributed mode: http://localhost:8000 (coordinator)")
+        print("  Standalone mode: http://localhost:7575 (worker directly)")
+        print("  Distributed mode: http://localhost:7575 (coordinator)")
         sys.exit(1)
 
     # Parse flags
@@ -453,7 +453,7 @@ if __name__ == '__main__':
 
     # For remote mode, require URL
     if mode == "remote" and not server_url:
-        server_url = "http://localhost:5000"  # Default
+        server_url = "http://localhost:7575"  # Default
 
     if len(args) == 0:
         print("Error: No command specified")

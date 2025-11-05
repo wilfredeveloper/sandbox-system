@@ -11,7 +11,7 @@ class Settings:
     """Centralized configuration management"""
 
     # Server Configuration
-    PORT = int(os.getenv('PORT', 5000))
+    PORT = int(os.getenv('PORT', 7575))
     HOST = os.getenv('HOST', '0.0.0.0')
     DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
     WORKER_ID = os.getenv('WORKER_ID', 'standalone')

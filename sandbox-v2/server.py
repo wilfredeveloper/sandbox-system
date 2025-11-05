@@ -58,10 +58,17 @@ else:
 # ============================================================================
 
 ALLOWED_COMMANDS = {
+    # Text processing
     'jq', 'awk', 'grep', 'sed', 'sort', 'uniq', 'head',
     'tail', 'wc', 'cut', 'tr', 'cat', 'echo', 'date',
-    'find', 'ls', 'python3', 'python', 'bc', 'comm',
-    'diff', 'basename', 'dirname', 'file', 'stat', 'tee'
+    'comm', 'diff', 'tee',
+    # File operations
+    'find', 'ls', 'basename', 'dirname', 'file', 'stat',
+    'mkdir', 'touch', 'rm', 'cp', 'mv',
+    # Navigation
+    'cd', 'pwd', 'whoami',
+    # Programming
+    'python3', 'python', 'bc'
 }
 
 FORBIDDEN_PATTERNS = [
@@ -737,17 +744,17 @@ class SandboxServer:
 
             for line in lines:
                 parts = line.split()
-                if len(parts) < 9:
+                if len(parts) < 8:
                     continue
 
-                filename = parts[8]
+                filename = parts[7]
                 if filename in ['.', '..']:
                     continue
 
                 file_info = {
                     'name': filename,
                     'size_bytes': int(parts[4]),
-                    'modified': f"{parts[5]}T{parts[6]}Z",
+                    'modified': f"{parts[5]}T{parts[6]}",
                     'permissions': parts[0]
                 }
                 files.append(file_info)
