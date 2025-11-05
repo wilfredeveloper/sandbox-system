@@ -5,8 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "docker==7.0.0",
-    "flask==3.0.0",
+    "docker>=7.0.0",
+    "fastapi>=0.121.0",
+    "pydantic>=2.12.3",
+    "python-multipart>=0.0.20",
     "redis>=7.0.1",
-    "requests==2.31.0",
+    "requests>=2.31.0",
+    "uvicorn[standard]>=0.38.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
 ]
