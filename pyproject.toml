@@ -1,9 +1,9 @@
 [project]
-name = "custom-sandbox"
+name = "mypa-sandbox"
 version = "0.1.0"
-description = "Add your description here"
+description = "MyPA Sandbox System"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "docker>=7.0.0",
     "fastapi>=0.121.0",

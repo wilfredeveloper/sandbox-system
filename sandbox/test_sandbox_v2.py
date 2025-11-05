@@ -13,7 +13,7 @@ import pytest
 import uuid
 import os
 import tempfile
-from sandbox_client_v2 import SandboxClient, SessionExpiredError
+from client import SandboxClient, SessionExpiredError
 
 
 class TestSandboxClient:

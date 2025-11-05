@@ -241,6 +241,32 @@ class SandboxClient:
             response.raise_for_status()
             return response.json()
 
+    def upload_file_from_bytes(
+        self,
+        filename: str,
+        file_data: bytes
+    ) -> Dict[str, Any]:
+        """Upload file from bytes data to workspace"""
+        if not self.session_id:
+            raise ValueError("No active session. Call get_or_create_session() first.")
+
+        if self.mode == "local":
+            if self._server is None:
+                raise RuntimeError(
+                    "Local server is not initialized. Call start_local_server() or set self._server before using local mode."
+                )
+            return self._server.upload_file(self.session_id, filename, file_data)
+        else:
+            files = {'file': (filename, file_data)}
+            response = requests.post(
+                f"{self.server_url}/upload_file",
+                files=files,
+                data={'session_id': self.session_id},
+                timeout=60
+            )
+            response.raise_for_status()
+            return response.json()
+
     def download_file(
         self,
         remote_name: str,
