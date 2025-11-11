@@ -52,6 +52,9 @@ services:
       - WORKERS=http://worker1:5000,http://worker2:5000
       - PORT=8000
       - LOG_LEVEL=${LOG_LEVEL:-info}
+    labels:
+      # Fix Coolify's Caddy auto-detection - explicitly use port 8000
+      - "caddy_0.reverse_proxy={{upstreams 8000}}"
     depends_on:
       redis:
         condition: service_healthy
