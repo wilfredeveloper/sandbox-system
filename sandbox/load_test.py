@@ -60,14 +60,19 @@ class LoadTester:
         """Create a single session and measure time"""
         start = time.time()
         try:
+            import uuid
             response = requests.post(
                 f"{self.server_url}/create_session",
-                json={},
+                json={
+                    "user_id": f"load_test_user_{threading.current_thread().ident}",
+                    "thread_id": f"load_test_{uuid.uuid4().hex[:12]}",
+                    "timeout_minutes": 30
+                },
                 timeout=10
             )
             latency = (time.time() - start) * 1000  # Convert to ms
 
-            if response.status_code == 200:
+            if response.status_code in [200, 201]:
                 data = response.json()
                 with self.lock:
                     self.results['create_session'].append({
