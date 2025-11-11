@@ -28,6 +28,9 @@ dependencies = [
     "uvicorn[standard]>=0.38.0",
 ]
 
+[tool.hatch.build.targets.wheel]
+packages = ["sandbox"]
+
 [dependency-groups]
 dev = [
     "pytest>=8.4.2",
