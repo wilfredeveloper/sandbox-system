@@ -11,7 +11,7 @@ class Settings:
     """Centralized configuration management"""
 
     # Server Configuration
-    PORT = int(os.getenv('PORT', 5000))
+    PORT = int(os.getenv('PORT', 7575))
     HOST = os.getenv('HOST', '0.0.0.0')
     DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
     WORKER_ID = os.getenv('WORKER_ID', 'standalone')
@@ -54,6 +54,15 @@ class Settings:
     # Execution defaults
     DEFAULT_COMMAND_TIMEOUT = int(os.getenv('DEFAULT_COMMAND_TIMEOUT', 30))
 
+    # File and workspace limits (NEW)
+    MAX_FILE_SIZE_MB = int(os.getenv('MAX_FILE_SIZE_MB', 100))
+    MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024  # 100MB
+
+    MAX_TOTAL_FILES = int(os.getenv('MAX_TOTAL_FILES', 1000))
+
+    MAX_WORKSPACE_SIZE_MB = int(os.getenv('MAX_WORKSPACE_SIZE_MB', 500))
+    MAX_WORKSPACE_SIZE = MAX_WORKSPACE_SIZE_MB * 1024 * 1024  # 500MB
+
     @classmethod
     def print_config(cls):
         """Print current configuration for debugging"""
@@ -83,6 +92,11 @@ class Settings:
         print(f"  Container Idle Timeout: {cls.CONTAINER_IDLE_TIMEOUT_MINUTES} minutes")
         print(f"  Cleanup Interval: {cls.CLEANUP_INTERVAL_SECONDS} seconds")
         print(f"  Command Timeout: {cls.DEFAULT_COMMAND_TIMEOUT} seconds")
+        print()
+        print(f"Resource Limits:")
+        print(f"  Max File Size: {cls.MAX_FILE_SIZE_MB} MB")
+        print(f"  Max Total Files: {cls.MAX_TOTAL_FILES}")
+        print(f"  Max Workspace Size: {cls.MAX_WORKSPACE_SIZE_MB} MB")
         print()
         print(f"Redis:")
         print(f"  Enabled: {cls.REDIS_ENABLED}")

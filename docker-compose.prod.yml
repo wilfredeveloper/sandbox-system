@@ -1,0 +1,170 @@
+# Production Docker Compose for Sandbox System
+# Deploys coordinator + 2 workers with Redis for session coordination
+
+services:
+  # Redis for session coordination
+  redis:
+    image: redis:7.2-alpine
+    container_name: sandbox-redis-prod
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-sandbox_redis_pass}
+      --appendonly yes
+      --dir /data
+    volumes:
+      - sandbox_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-sandbox_redis_pass}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - sandbox-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Coordinator / Load Balancer
+  coordinator:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile.coordinator
+    container_name: sandbox-coordinator-prod
+    ports:
+      - "${SANDBOX_COORDINATOR_PORT}:8000"  # Production Sandbox Coordinator (SERVICE_ID=10)
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-sandbox_redis_pass}
+      - WORKERS=http://worker1:5000,http://worker2:5000
+      - PORT=8000
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      redis:
+        condition: service_healthy
+      worker1:
+        condition: service_started
+      worker2:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - sandbox-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Worker 1 - Production optimized for VPS
+  worker1:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile.worker
+    container_name: sandbox-worker1-prod
+    privileged: true  # Required for Docker-in-Docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Share host Docker socket
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-sandbox_redis_pass}
+      - WORKER_ID=worker1
+      - PORT=5000
+      # Pool configuration (adjust based on VPS resources)
+      - POOL_SIZE=${WORKER_POOL_SIZE:-15}
+      - MIN_POOL_SIZE=${WORKER_MIN_POOL_SIZE:-3}
+      - MAX_POOL_SIZE=${WORKER_MAX_POOL_SIZE:-30}
+      # Resource limits per sandbox container
+      - MEMORY_LIMIT=${SANDBOX_MEMORY_LIMIT:-256m}
+      - CPU_QUOTA=${SANDBOX_CPU_QUOTA:-25000}
+      # Timeout configuration
+      - SESSION_TIMEOUT_MINUTES=${SESSION_TIMEOUT:-15}
+      - CONTAINER_IDLE_TIMEOUT_MINUTES=${CONTAINER_IDLE_TIMEOUT:-5}
+      - CLEANUP_INTERVAL_SECONDS=${CLEANUP_INTERVAL:-300}
+      # Aggressive cleanup for resource efficiency
+      - AGGRESSIVE_CLEANUP=${AGGRESSIVE_CLEANUP:-true}
+      - POOL_REFILL_DELAY_SECONDS=${POOL_REFILL_DELAY:-60}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - sandbox-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Worker 2 - Production optimized for VPS
+  worker2:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile.worker
+    container_name: sandbox-worker2-prod
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-sandbox_redis_pass}
+      - WORKER_ID=worker2
+      - PORT=5000
+      # Pool configuration (adjust based on VPS resources)
+      - POOL_SIZE=${WORKER_POOL_SIZE:-15}
+      - MIN_POOL_SIZE=${WORKER_MIN_POOL_SIZE:-3}
+      - MAX_POOL_SIZE=${WORKER_MAX_POOL_SIZE:-30}
+      # Resource limits per sandbox container
+      - MEMORY_LIMIT=${SANDBOX_MEMORY_LIMIT:-256m}
+      - CPU_QUOTA=${SANDBOX_CPU_QUOTA:-25000}
+      # Timeout configuration
+      - SESSION_TIMEOUT_MINUTES=${SESSION_TIMEOUT:-15}
+      - CONTAINER_IDLE_TIMEOUT_MINUTES=${CONTAINER_IDLE_TIMEOUT:-5}
+      - CLEANUP_INTERVAL_SECONDS=${CLEANUP_INTERVAL:-300}
+      # Aggressive cleanup for resource efficiency
+      - AGGRESSIVE_CLEANUP=${AGGRESSIVE_CLEANUP:-true}
+      - POOL_REFILL_DELAY_SECONDS=${POOL_REFILL_DELAY:-60}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - sandbox-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  sandbox_redis_data:
+
+networks:
+  sandbox-net:
+    driver: bridge
+    name: sandbox-network-prod

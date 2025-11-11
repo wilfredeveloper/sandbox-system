@@ -6,7 +6,7 @@ services:
     image: redis:7-alpine
     container_name: sandbox-redis
     ports:
-      - "6379:6379"
+      - "220105:6379"  # Dev Redis (shared with backend, or use separate instance)
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes
@@ -24,7 +24,7 @@ services:
       dockerfile: Dockerfile.coordinator
     container_name: sandbox-coordinator
     ports:
-      - "8000:8000"
+      - "220110:8000"  # Dev Sandbox Coordinator (SERVICE_ID=10)
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379

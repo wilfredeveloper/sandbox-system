@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """
-Interactive Sandbox Shell with cd support
+Interactive Sandbox Shell with cd support (Sandbox V2)
 Works like a real shell - cd persists between commands!
+
+Supports both LOCAL and REMOTE modes:
+- LOCAL: Direct in-process calls (no HTTP overhead)
+- REMOTE: HTTP calls to remote sandbox server
 """
 
-import requests
 import sys
 import atexit
+import os
+import uuid
 
 # Try to import readline for Unix (optional, for better command history)
 try:
@@ -15,76 +20,92 @@ except ImportError:
     # readline not available on Windows, but input() still works fine
     pass
 
+# Add sandbox-v2 to path
+sandbox_v2_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sandbox-v2')
+if sandbox_v2_dir not in sys.path:
+    sys.path.insert(0, sandbox_v2_dir)
+
+from client import SandboxClient
+
 class SandboxShell:
-    """Interactive shell for sandbox"""
-    
-    def __init__(self, server_url: str):
-        self.server_url = server_url.rstrip('/')
-        self.session_id = None
+    """Interactive shell for sandbox V2"""
+
+    def __init__(self, mode: str = "local", server_url: str = None):
+        """
+        Initialize sandbox shell.
+
+        Args:
+            mode: "local" or "remote"
+            server_url: Required for remote mode
+        """
+        self.mode = mode
         self.current_dir = "/workspace"
+
+        # Initialize client
+        self.client = SandboxClient(mode=mode, server_url=server_url)
+
+        # Create session with unique thread_id
+        self.thread_id = f"shell_{uuid.uuid4().hex[:8]}"
+        self.user_id = "shell_user"
+
         self._create_session()
         atexit.register(self.cleanup)
-    
+
     def _create_session(self):
-        print(f"🚀 Connecting to {self.server_url}...")
-        response = requests.post(f"{self.server_url}/create_session", timeout=10)
-        response.raise_for_status()
-        
-        data = response.json()
-        self.session_id = data['session_id']
-        print(f"✅ Session: {self.session_id}")
+        print(f"🚀 Initializing sandbox in {self.mode.upper()} mode...")
+
+        session_info = self.client.get_or_create_session(
+            user_id=self.user_id,
+            thread_id=self.thread_id,
+            timeout_minutes=30
+        )
+
+        print(f"✅ Session: {session_info['session_id'][:12]}...")
         print(f"📁 Working directory: {self.current_dir}")
         print(f"💡 Type 'exit' or 'quit' to close\n")
     
     def run(self, command: str, timeout: int = 30):
         """Execute command"""
         cmd_stripped = command.strip()
-        
+
         # Handle cd specially
         if cmd_stripped.startswith('cd ') or cmd_stripped == 'cd':
             return self._handle_cd(cmd_stripped)
-        
+
         # Prepend cd for directory context
         full_command = f"cd {self.current_dir} && {command}"
-        
-        response = requests.post(
-            f"{self.server_url}/execute",
-            json={
-                'session_id': self.session_id,
-                'command': full_command,
-                'timeout': timeout
-            },
-            timeout=timeout + 5
-        )
-        response.raise_for_status()
-        result = response.json()
-        
-        return result['output'], result['exit_code']
+
+        result = self.client.execute(full_command, timeout=timeout)
+
+        # Combine stdout and stderr for output
+        output = result['stdout']
+        if result['stderr']:
+            output += result['stderr']
+
+        return output, result['exit_code']
     
     def _handle_cd(self, command: str):
         """Handle cd command"""
         parts = command.split(maxsplit=1)
-        
+
         if len(parts) == 1 or parts[1] == '~':
             target = "/workspace"
         else:
             target = parts[1].strip()
-        
+
         full_command = f"cd {self.current_dir} && cd {target} && pwd"
-        
-        response = requests.post(
-            f"{self.server_url}/execute",
-            json={'session_id': self.session_id, 'command': full_command, 'timeout': 30},
-            timeout=35
-        )
-        response.raise_for_status()
-        result = response.json()
-        
+
+        result = self.client.execute(full_command, timeout=30)
+
         if result['exit_code'] == 0:
-            self.current_dir = result['output'].strip()
+            self.current_dir = result['stdout'].strip()
             return "", 0
         else:
-            return result['output'], result['exit_code']
+            # Combine stdout and stderr for error output
+            output = result['stdout']
+            if result['stderr']:
+                output += result['stderr']
+            return output, result['exit_code']
     
     def get_prompt(self):
         """Get shell prompt"""
@@ -131,27 +152,50 @@ class SandboxShell:
         print("\n👋 Goodbye!")
     
     def cleanup(self):
-        if self.session_id:
-            try:
-                requests.post(
-                    f"{self.server_url}/cleanup",
-                    json={'session_id': self.session_id},
-                    timeout=10
-                )
-            except:
-                pass
+        """Cleanup session on exit"""
+        try:
+            self.client.close_session()
+        except:
+            pass
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("Usage: python sandbox_shell.py <server_url>")
-        print("Example: python sandbox_shell.py http://YOUR_VPS_IP:2205")
-        sys.exit(1)
-    
-    server_url = sys.argv[1]
-    
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description='Interactive Sandbox Shell (V2)',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Local mode (in-process, no HTTP)
+  python sandbox_shell.py
+  python sandbox_shell.py --mode local
+
+  # Remote mode (HTTP to remote server)
+  python sandbox_shell.py --mode remote --url http://YOUR_VPS_IP:7575
+        """
+    )
+
+    parser.add_argument(
+        '--mode',
+        choices=['local', 'remote'],
+        default='local',
+        help='Sandbox mode: local (in-process) or remote (HTTP)'
+    )
+
+    parser.add_argument(
+        '--url',
+        help='Server URL for remote mode (e.g., http://localhost:7575)'
+    )
+
+    args = parser.parse_args()
+
+    # Validate arguments
+    if args.mode == 'remote' and not args.url:
+        parser.error("--url is required for remote mode")
+
     try:
-        shell = SandboxShell(server_url)
+        shell = SandboxShell(mode=args.mode, server_url=args.url)
         shell.run_shell()
     except KeyboardInterrupt:
         print("\n\n👋 Interrupted")

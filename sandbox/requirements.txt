@@ -1,0 +1,19 @@
+# FastAPI and ASGI server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+
+# Docker SDK
+docker==6.1.3
+
+# Redis for distributed mode
+redis==5.0.1
+
+# HTTP client for SDK remote mode
+requests==2.31.0
+
+# Additional utilities
+python-multipart==0.0.6  # For file uploads in FastAPI
+
+# Testing
+pytest==7.4.3
