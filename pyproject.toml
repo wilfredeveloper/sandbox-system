@@ -1,9 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "mypa-sandbox"
 version = "0.1.0"
-description = "MyPA Sandbox System"
+description = "MyPA Sandbox System - Secure code execution environment"
 readme = "README.md"
 requires-python = ">=3.11"
+authors = [
+    {name = "MyPA Team"},
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
     "docker>=7.0.0",
     "fastapi>=0.121.0",
