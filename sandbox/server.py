@@ -46,6 +46,7 @@ if settings.REDIS_ENABLED:
     redis_client = redis.Redis(
         host=settings.REDIS_HOST,
         port=settings.REDIS_PORT,
+        password=settings.REDIS_PASSWORD,
         decode_responses=True
     )
     logger.info(f"✓ Redis enabled - distributed mode ({settings.REDIS_HOST}:{settings.REDIS_PORT})")

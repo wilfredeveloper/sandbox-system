@@ -46,6 +46,7 @@ class Settings:
     # Redis Configuration (optional - for distributed setup)
     REDIS_HOST = os.getenv('REDIS_HOST')
     REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+    REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', None)
     REDIS_ENABLED = REDIS_HOST is not None
 
     # Docker Configuration
