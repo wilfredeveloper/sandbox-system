@@ -87,14 +87,73 @@ def health():
         ]
     })
 
+@app.route('/get_session', methods=['GET'])
+def get_session():
+    """Get session by thread_id - check all workers"""
+    thread_id = request.args.get('thread_id')
+
+    if not thread_id:
+        return jsonify({'error': 'thread_id required'}), 400
+
+    # Try to find session in Redis first
+    # Check if we have a session_id stored for this thread_id
+    session_key = f"thread:{thread_id}:session"
+    session_id = redis_client.get(session_key)
+
+    if session_id:
+        # We know which worker has this session
+        worker = get_worker_for_session(session_id)
+        if worker:
+            try:
+                response = requests.get(
+                    f"{worker}/get_session",
+                    params={"thread_id": thread_id},
+                    timeout=5
+                )
+                if response.status_code == 200:
+                    return Response(
+                        response.content,
+                        status=response.status_code,
+                        content_type=response.headers['Content-Type']
+                    )
+            except Exception:
+                pass
+
+    # If not found in Redis, check all healthy workers
+    healthy_workers = get_healthy_workers()
+    for worker in healthy_workers:
+        try:
+            response = requests.get(
+                f"{worker}/get_session",
+                params={"thread_id": thread_id},
+                timeout=5
+            )
+            if response.status_code == 200:
+                # Found it! Store the mapping
+                data = response.json()
+                session_id = data.get('session_id')
+                if session_id:
+                    set_worker_for_session(session_id, worker)
+                    redis_client.setex(session_key, int(SESSION_TIMEOUT.total_seconds()), session_id)
+                return Response(
+                    response.content,
+                    status=response.status_code,
+                    content_type=response.headers['Content-Type']
+                )
+        except Exception:
+            continue
+
+    # Not found on any worker
+    return jsonify({'error': 'Session not found'}), 404
+
 @app.route('/create_session', methods=['POST'])
 def create_session():
     """Route session creation to a worker"""
     worker = select_worker()
-    
+
     if not worker:
         return jsonify({'error': 'No healthy workers available'}), 503
-    
+
     try:
         # Forward request to worker
         response = requests.post(
@@ -102,23 +161,29 @@ def create_session():
             json=request.json,
             timeout=10
         )
-        
-        if response.status_code == 200:
+
+        if response.status_code in [200, 201]:
             data = response.json()
             session_id = data.get('session_id')
-            
+            thread_id = request.json.get('thread_id')
+
             # Store worker assignment
             set_worker_for_session(session_id, worker)
-            
+
+            # Store thread_id -> session_id mapping
+            if thread_id:
+                session_key = f"thread:{thread_id}:session"
+                redis_client.setex(session_key, int(SESSION_TIMEOUT.total_seconds()), session_id)
+
             # Add worker info to response
             data['worker'] = worker
-            
+
         return Response(
             response.content,
             status=response.status_code,
             content_type=response.headers['Content-Type']
         )
-    
+
     except Exception as e:
         return jsonify({'error': f'Worker communication failed: {str(e)}'}), 500
 

@@ -8,10 +8,9 @@ Supports both LOCAL and REMOTE modes:
 - REMOTE: HTTP calls to remote sandbox server
 """
 
-import sys
 import atexit
-import os
 import uuid
+from typing import Literal, Optional
 
 # Try to import readline for Unix (optional, for better command history)
 try:
@@ -20,17 +19,13 @@ except ImportError:
     # readline not available on Windows, but input() still works fine
     pass
 
-# Add sandbox-v2 to path
-sandbox_v2_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sandbox-v2')
-if sandbox_v2_dir not in sys.path:
-    sys.path.insert(0, sandbox_v2_dir)
-
-from client import SandboxClient
+# Import from sandbox package
+from sandbox.client import SandboxClient
 
 class SandboxShell:
     """Interactive shell for sandbox V2"""
 
-    def __init__(self, mode: str = "local", server_url: str = None):
+    def __init__(self, mode: Literal["local", "remote"] = "local", server_url: Optional[str] = None):
         """
         Initialize sandbox shell.
 
@@ -172,7 +167,7 @@ Examples:
   python sandbox_shell.py --mode local
 
   # Remote mode (HTTP to remote server)
-  python sandbox_shell.py --mode remote --url http://YOUR_VPS_IP:7575
+  python sandbox_shell.py --mode remote --url http://YOUR_VPS_IP:20110
         """
     )
 
@@ -185,7 +180,7 @@ Examples:
 
     parser.add_argument(
         '--url',
-        help='Server URL for remote mode (e.g., http://localhost:7575)'
+        help='Server URL for remote mode (e.g., http://localhost:20110)'
     )
 
     args = parser.parse_args()

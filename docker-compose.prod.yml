@@ -2,6 +2,15 @@
 # Deploys coordinator + 2 workers with Redis for session coordination
 
 services:
+  # Secure sandbox image (used by workers)
+  sandbox-secure:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile.secure
+    image: sandbox-secure:latest
+    command: /bin/true  # This service just builds the image, doesn't run
+    restart: "no"
+
   # Redis for session coordination
   redis:
     image: redis:7.2-alpine
@@ -96,6 +105,8 @@ services:
       - POOL_REFILL_DELAY_SECONDS=${POOL_REFILL_DELAY:-60}
       - LOG_LEVEL=${LOG_LEVEL:-info}
     depends_on:
+      sandbox-secure:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     healthcheck:
@@ -144,6 +155,8 @@ services:
       - POOL_REFILL_DELAY_SECONDS=${POOL_REFILL_DELAY:-60}
       - LOG_LEVEL=${LOG_LEVEL:-info}
     depends_on:
+      sandbox-secure:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     healthcheck:
