@@ -68,6 +68,7 @@ services:
     restart: unless-stopped
     networks:
       - sandbox-net
+      - coolify
     logging:
       driver: "json-file"
       options:
@@ -181,3 +182,6 @@ networks:
   sandbox-net:
     driver: bridge
     name: sandbox-network-prod
+  coolify:
+    external: true
+    name: coolify
