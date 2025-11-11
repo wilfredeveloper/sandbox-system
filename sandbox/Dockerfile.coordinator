@@ -23,5 +23,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run coordinator
-CMD ["python", "coordinator.py"]
+# Run coordinator with gunicorn for production
+# Use shell form to allow environment variable substitution
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8000} --workers ${GUNICORN_WORKERS:-4} --timeout ${GUNICORN_TIMEOUT:-120} --access-logfile - --error-logfile - --preload coordinator:app"]

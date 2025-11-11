@@ -301,10 +301,11 @@ def status(session_id):
     except Exception as e:
         return jsonify({'error': f'Worker communication failed: {str(e)}'}), 500
 
-if __name__ == '__main__':
+def on_starting(server):
+    """Gunicorn hook - called before workers are forked"""
     print("🚀 Sandbox Coordinator starting...")
     print(f"   Redis: {REDIS_HOST}:{REDIS_PORT}")
-    
+
     # Test Redis connection
     try:
         redis_client.ping()
@@ -312,8 +313,25 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"   ❌ Redis connection failed: {e}")
         exit(1)
-    
+
     port = int(os.getenv('PORT', 8000))
     print(f"   Listening on port {port}")
-    
+
+
+if __name__ == '__main__':
+    # Development mode - run with Flask dev server
+    print("🚀 Sandbox Coordinator starting (DEV MODE)...")
+    print(f"   Redis: {REDIS_HOST}:{REDIS_PORT}")
+
+    # Test Redis connection
+    try:
+        redis_client.ping()
+        print("   ✅ Redis connected")
+    except Exception as e:
+        print(f"   ❌ Redis connection failed: {e}")
+        exit(1)
+
+    port = int(os.getenv('PORT', 8000))
+    print(f"   Listening on port {port}")
+
     app.run(host='0.0.0.0', port=port, debug=False, threaded=True)

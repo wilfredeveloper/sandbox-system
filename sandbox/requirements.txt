@@ -5,6 +5,7 @@ pydantic==2.5.0
 
 # Flask for coordinator
 flask==3.0.0
+gunicorn==21.2.0
 
 # Docker SDK
 docker==6.1.3
