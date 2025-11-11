@@ -54,7 +54,7 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
     labels:
       # Fix Coolify's Caddy auto-detection - explicitly use port 8000
-      - "caddy_0.reverse_proxy={{upstreams 8000}}"
+      - "caddy_0.handle_path.0_reverse_proxy={{upstreams 8000}}"
     depends_on:
       redis:
         condition: service_healthy
