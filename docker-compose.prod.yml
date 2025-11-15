@@ -12,7 +12,7 @@ services:
     restart: "no"
 
   # Redis for session coordination
-  redis:
+  sandbox-redis:
     image: redis:7.2-alpine
     container_name: sandbox-redis-prod
     command: >
@@ -46,7 +46,7 @@ services:
     ports:
       - "${SANDBOX_COORDINATOR_PORT:-20110}:${SANDBOX_COORDINATOR_PORT:-20110}"  # Production Sandbox Coordinator (SERVICE_ID=10)
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=sandbox-redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-sandbox_redis_pass}
       - WORKERS=http://worker1:5000,http://worker2:5000
@@ -56,7 +56,7 @@ services:
       # Fix Coolify's Caddy auto-detection - explicitly use port 8000
       # - "caddy_0.handle_path.0_reverse_proxy={{upstreams 8000}}"
     depends_on:
-      redis:
+      sandbox-redis:
         condition: service_healthy
       worker1:
         condition: service_started
@@ -88,7 +88,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock  # Share host Docker socket
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=sandbox-redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-sandbox_redis_pass}
       - WORKER_ID=worker1
@@ -111,7 +111,7 @@ services:
     depends_on:
       sandbox-secure:
         condition: service_completed_successfully
-      redis:
+      sandbox-redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -138,7 +138,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=sandbox-redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-sandbox_redis_pass}
       - WORKER_ID=worker2
@@ -161,7 +161,7 @@ services:
     depends_on:
       sandbox-secure:
         condition: service_completed_successfully
-      redis:
+      sandbox-redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
