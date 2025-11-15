@@ -21,6 +21,7 @@ import re
 import shlex
 import tarfile
 import io
+import os
 from datetime import datetime, timedelta
 from threading import Thread, Lock
 from typing import Optional, Dict, Any, List, Literal
@@ -1080,11 +1081,22 @@ async def upload_file(
         tar_stream.seek(0)
         container.put_archive(settings.WORKSPACE_DIR, tar_stream)
 
-        # Fix permissions
-        container.exec_run(
-            f'chown {settings.SANDBOX_USER}:{settings.SANDBOX_USER} {settings.WORKSPACE_DIR}/{filename}',
-            user='root'
-        )
+        # Fix permissions (handle subdirectories)
+        # Use chown -R on parent directory if file is in a subdirectory
+        file_path = f'{settings.WORKSPACE_DIR}/{filename}'
+        if '/' in filename:
+            # File is in subdirectory, chown the parent dir recursively
+            parent_dir = os.path.dirname(file_path)
+            container.exec_run(
+                f'chown -R {settings.SANDBOX_USER}:{settings.SANDBOX_USER} {parent_dir}',
+                user='root'
+            )
+        else:
+            # File is in root workspace, chown just the file
+            container.exec_run(
+                f'chown {settings.SANDBOX_USER}:{settings.SANDBOX_USER} {file_path}',
+                user='root'
+            )
 
         update_session_activity(session_id)
 
