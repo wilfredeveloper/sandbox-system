@@ -320,7 +320,8 @@ def get_session_by_thread(thread_id: str) -> Optional[str]:
     """Get session_id for a thread_id"""
     if settings.REDIS_ENABLED:
         session_id = redis_client.get(f"thread:{thread_id}")
-        return session_id.decode() if session_id else None
+        # Redis client has decode_responses=True, so session_id is already a str
+        return session_id if session_id else None
     else:
         return thread_to_session.get(thread_id)
 
