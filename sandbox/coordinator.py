@@ -22,15 +22,32 @@ SESSION_TIMEOUT = timedelta(hours=1)
 
 # Resolve Redis hostname to IPv4 (fixes IPv6 auth issue with Redis)
 # Docker DNS sometimes returns IPv6 first, which has auth problems
+# Also prioritize sandbox network (10.0.19.x) over coolify network (10.0.1.x)
 import socket
 def resolve_to_ipv4(hostname):
-    """Resolve hostname to IPv4 address, preferring IPv4 over IPv6"""
+    """Resolve hostname to IPv4 address, preferring sandbox network"""
     try:
-        # Get all addresses for the hostname
+        # Get all IPv4 addresses for the hostname
         addr_info = socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM)
         if addr_info:
-            # Return the first IPv4 address
-            return addr_info[0][4][0]
+            # Extract all IPv4 addresses
+            ipv4_addrs = [addr[4][0] for addr in addr_info]
+
+            # Prefer sandbox network (10.0.19.x) if available
+            for ip in ipv4_addrs:
+                if ip.startswith('10.0.19.'):
+                    print(f"   Using sandbox network Redis: {ip}")
+                    return ip
+
+            # Prefer l00og network (10.0.18.x) as second choice
+            for ip in ipv4_addrs:
+                if ip.startswith('10.0.18.'):
+                    print(f"   Using l00og network Redis: {ip}")
+                    return ip
+
+            # Otherwise use first IPv4
+            print(f"   Using first available IPv4: {ipv4_addrs[0]}")
+            return ipv4_addrs[0]
     except socket.gaierror:
         pass
     # Fallback to original hostname if resolution fails
