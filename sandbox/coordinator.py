@@ -20,9 +20,26 @@ REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', None)
 SESSION_TIMEOUT = timedelta(hours=1)
 
-# Connect to Redis
+# Resolve Redis hostname to IPv4 (fixes IPv6 auth issue with Redis)
+# Docker DNS sometimes returns IPv6 first, which has auth problems
+import socket
+def resolve_to_ipv4(hostname):
+    """Resolve hostname to IPv4 address, preferring IPv4 over IPv6"""
+    try:
+        # Get all addresses for the hostname
+        addr_info = socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM)
+        if addr_info:
+            # Return the first IPv4 address
+            return addr_info[0][4][0]
+    except socket.gaierror:
+        pass
+    # Fallback to original hostname if resolution fails
+    return hostname
+
+# Connect to Redis using IPv4 address
+REDIS_HOST_IPV4 = resolve_to_ipv4(REDIS_HOST)
 redis_client = redis.Redis(
-    host=REDIS_HOST,
+    host=REDIS_HOST_IPV4,
     port=REDIS_PORT,
     password=REDIS_PASSWORD,
     decode_responses=True
@@ -304,7 +321,7 @@ def status(session_id):
 def on_starting(server):
     """Gunicorn hook - called before workers are forked"""
     print("🚀 Sandbox Coordinator starting...")
-    print(f"   Redis: {REDIS_HOST}:{REDIS_PORT}")
+    print(f"   Redis: {REDIS_HOST}:{REDIS_PORT} (resolved to {REDIS_HOST_IPV4})")
 
     # Test Redis connection
     try:
@@ -321,7 +338,7 @@ def on_starting(server):
 if __name__ == '__main__':
     # Development mode - run with Flask dev server
     print("🚀 Sandbox Coordinator starting (DEV MODE)...")
-    print(f"   Redis: {REDIS_HOST}:{REDIS_PORT}")
+    print(f"   Redis: {REDIS_HOST}:{REDIS_PORT} (resolved to {REDIS_HOST_IPV4})")
 
     # Test Redis connection
     try:
