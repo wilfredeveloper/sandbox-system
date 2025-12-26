@@ -59,24 +59,11 @@ else:
 # Command Validation (Server-Side)
 # ============================================================================
 
-ALLOWED_COMMANDS = {
-    # Text processing
-    'jq', 'awk', 'grep', 'sed', 'sort', 'uniq', 'head',
-    'tail', 'wc', 'cut', 'tr', 'cat', 'echo', 'date',
-    'comm', 'diff', 'tee',
-    # File operations
-    'find', 'ls', 'basename', 'dirname', 'file', 'stat',
-    'mkdir', 'touch', 'rm', 'cp', 'mv',
-    # Navigation
-    'cd', 'pwd', 'whoami',
-    # Programming
-    'python3', 'python', 'bc'
-}
+# Import unified whitelist (SINGLE SOURCE OF TRUTH)
+from command_whitelist import get_allowed_commands, get_forbidden_patterns
 
-FORBIDDEN_PATTERNS = [
-    r'\brm\b', r'\bmv\b', r'\bdd\b', r'\bcurl\b', r'\bwget\b',
-    r'\bssh\b', r'\bsudo\b', r'\bchmod\b', r'\bchown\b'
-]
+ALLOWED_COMMANDS = get_allowed_commands()
+FORBIDDEN_PATTERNS = get_forbidden_patterns()
 
 
 def split_on_operators(command: str) -> List[str]:
