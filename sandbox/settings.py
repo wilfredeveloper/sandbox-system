@@ -52,6 +52,10 @@ class Settings:
     # Docker Configuration
     DOCKER_NETWORK_MODE = os.getenv('DOCKER_NETWORK_MODE', 'none')
 
+    # Shared Workspace Volume (for unified filesystem with backend)
+    HOST_WORKSPACE_PATH = os.getenv('HOST_WORKSPACE_PATH')  # Path on host for volume mount
+    ENABLE_SHARED_WORKSPACE = HOST_WORKSPACE_PATH is not None
+
     # Execution defaults
     DEFAULT_COMMAND_TIMEOUT = int(os.getenv('DEFAULT_COMMAND_TIMEOUT', 30))
 

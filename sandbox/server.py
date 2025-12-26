@@ -146,6 +146,16 @@ class ContainerPool:
     def _create_container(self):
         """Create a single container"""
         try:
+            # Build volumes configuration
+            volumes = {}
+            if settings.ENABLE_SHARED_WORKSPACE:
+                # Mount shared workspace volume for unified filesystem
+                volumes[settings.HOST_WORKSPACE_PATH] = {
+                    'bind': settings.WORKSPACE_DIR,
+                    'mode': 'rw'
+                }
+                logger.debug(f"Mounting shared workspace: {settings.HOST_WORKSPACE_PATH} -> {settings.WORKSPACE_DIR}")
+
             container = client.containers.run(
                 settings.CONTAINER_IMAGE,
                 command="sleep infinity",
@@ -155,7 +165,8 @@ class ContainerPool:
                 network_mode=settings.DOCKER_NETWORK_MODE,
                 remove=False,
                 user=settings.SANDBOX_USER,
-                working_dir=settings.WORKSPACE_DIR
+                working_dir=settings.WORKSPACE_DIR,
+                volumes=volumes if volumes else None
             )
             return container
         except Exception as e:
@@ -562,10 +573,15 @@ class SandboxServer:
         start_time = time.time()
         try:
             container = client.containers.get(session_data['container_id'])
+
+            # Use user-specific workspace directory for unified filesystem
+            user_id = session_data.get('user_id', 'default')
+            user_workspace = f"{settings.WORKSPACE_DIR}/users/{user_id}"
+
             result = container.exec_run(
                 ['bash', '-c', command],
                 user=settings.SANDBOX_USER,
-                workdir=settings.WORKSPACE_DIR,
+                workdir=user_workspace,
                 demux=True
             )
 
