@@ -49,9 +49,6 @@ services:
       - WORKERS=http://worker1:5000,http://worker2:5000
       - PORT=${SANDBOX_COORDINATOR_PORT:-20110}
       - LOG_LEVEL=${LOG_LEVEL:-info}
-    labels:
-      # Fix Coolify's Caddy auto-detection - explicitly use port 8000
-      # - "caddy_0.handle_path.0_reverse_proxy={{upstreams 8000}}"
     depends_on:
       sandbox-redis:
         condition: service_healthy
