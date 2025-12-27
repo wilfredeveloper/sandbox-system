@@ -106,6 +106,10 @@ services:
       - AGGRESSIVE_CLEANUP=${AGGRESSIVE_CLEANUP:-true}
       - POOL_REFILL_DELAY_SECONDS=${POOL_REFILL_DELAY:-60}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      # Workspace configuration (NFS shared with backend)
+      - WORKSPACE_DIR=${WORKSPACE_DIR:-/workspace}
+      - HOST_WORKSPACE_PATH=${HOST_WORKSPACE_PATH:-/workspace}
+      - MAX_WORKSPACE_SIZE_MB=${MAX_WORKSPACE_SIZE_MB:-500}
     depends_on:
       sandbox-secure:
         condition: service_completed_successfully
@@ -157,6 +161,10 @@ services:
       - AGGRESSIVE_CLEANUP=${AGGRESSIVE_CLEANUP:-true}
       - POOL_REFILL_DELAY_SECONDS=${POOL_REFILL_DELAY:-60}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      # Workspace configuration (NFS shared with backend)
+      - WORKSPACE_DIR=${WORKSPACE_DIR:-/workspace}
+      - HOST_WORKSPACE_PATH=${HOST_WORKSPACE_PATH:-/workspace}
+      - MAX_WORKSPACE_SIZE_MB=${MAX_WORKSPACE_SIZE_MB:-500}
     depends_on:
       sandbox-secure:
         condition: service_completed_successfully
