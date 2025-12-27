@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy worker code
 COPY server.py .
 COPY settings.py .
+COPY command_whitelist.py .
 
 # Expose port
 EXPOSE 5000

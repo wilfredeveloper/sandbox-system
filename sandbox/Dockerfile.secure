@@ -6,21 +6,83 @@ FROM ubuntu:22.04
 # Prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install common utilities
+# Install comprehensive utilities for developer productivity
 RUN apt-get update && apt-get install -y \
+    # Core utilities
     bash \
     coreutils \
+    findutils \
+    grep \
+    sed \
+    gawk \
+    \
+    # File system utilities
+    tree \
+    file \
+    less \
+    rsync \
+    zip \
+    unzip \
+    tar \
+    gzip \
+    bzip2 \
+    xz-utils \
+    \
+    # Network utilities
     curl \
     wget \
+    netcat-openbsd \
+    iproute2 \
+    iputils-ping \
+    dnsutils \
+    \
+    # Development tools
     git \
+    make \
+    build-essential \
+    cmake \
+    \
+    # Text editors
     vim \
     nano \
+    \
+    # Programming languages
     python3 \
     python3-pip \
+    python3-venv \
     nodejs \
     npm \
-    build-essential \
+    \
+    # Data processing
+    jq \
+    sqlite3 \
+    \
+    # Monitoring and debugging
+    htop \
+    procps \
+    strace \
+    lsof \
+    \
+    # Additional useful tools
+    bc \
+    diffutils \
+    patch \
+    ca-certificates \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
+
+# Install commonly used Python packages (as root before switching user)
+RUN pip3 install --no-cache-dir \
+    requests \
+    pandas \
+    numpy \
+    matplotlib \
+    pillow \
+    beautifulsoup4 \
+    pyyaml \
+    python-dotenv \
+    httpx \
+    aiohttp
 
 # Create non-root user with specific UID/GID
 RUN groupadd -g 1000 sandboxuser && \

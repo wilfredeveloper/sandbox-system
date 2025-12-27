@@ -647,6 +647,10 @@ class SandboxServer:
                     f"Workspace size limit exceeded: {settings.MAX_WORKSPACE_SIZE_MB} MB"
                 )
 
+            # SECURITY FIX: Use user-specific workspace directory
+            user_id = session_data.get('user_id', 'default')
+            user_workspace = f"{settings.WORKSPACE_DIR}/users/{user_id}"
+
             # Upload file
             tar_stream = io.BytesIO()
             tar = tarfile.TarFile(fileobj=tar_stream, mode='w')
@@ -657,11 +661,11 @@ class SandboxServer:
             tar.close()
 
             tar_stream.seek(0)
-            container.put_archive(settings.WORKSPACE_DIR, tar_stream)
+            container.put_archive(user_workspace, tar_stream)
 
             # Fix permissions
             container.exec_run(
-                f'chown {settings.SANDBOX_USER}:{settings.SANDBOX_USER} {settings.WORKSPACE_DIR}/{filename}',
+                f'chown {settings.SANDBOX_USER}:{settings.SANDBOX_USER} {user_workspace}/{filename}',
                 user='root'
             )
 
@@ -672,7 +676,7 @@ class SandboxServer:
             return {
                 'status': 'uploaded',
                 'filename': filename,
-                'path': f'{settings.WORKSPACE_DIR}/{filename}',
+                'path': f'{user_workspace}/{filename}',
                 'size_bytes': file_size
             }
 
@@ -693,9 +697,13 @@ class SandboxServer:
         try:
             container = client.containers.get(session_data['container_id'])
 
+            # SECURITY FIX: Use user-specific workspace directory
+            user_id = session_data.get('user_id', 'default')
+            user_workspace = f"{settings.WORKSPACE_DIR}/users/{user_id}"
+
             # Check if file exists
             check_result = container.exec_run(
-                f'test -f {settings.WORKSPACE_DIR}/{filename}',
+                f'test -f {user_workspace}/{filename}',
                 user=settings.SANDBOX_USER
             )
 
@@ -703,7 +711,7 @@ class SandboxServer:
                 raise FileNotFoundError(f"File not found in workspace: {filename}")
 
             # Get file as tar archive
-            bits, stat = container.get_archive(f'{settings.WORKSPACE_DIR}/{filename}')
+            bits, stat = container.get_archive(f'{user_workspace}/{filename}')
 
             # Extract file from tar
             tar_stream = io.BytesIO()
@@ -735,9 +743,13 @@ class SandboxServer:
         try:
             container = client.containers.get(session_data['container_id'])
 
+            # SECURITY FIX: Use user-specific workspace directory
+            user_id = session_data.get('user_id', 'default')
+            user_workspace = f"{settings.WORKSPACE_DIR}/users/{user_id}"
+
             # List files with metadata
             result = container.exec_run(
-                f'ls -la --time-style=iso {settings.WORKSPACE_DIR}',
+                f'ls -la --time-style=iso {user_workspace}',
                 user=settings.SANDBOX_USER
             )
 
@@ -978,9 +990,13 @@ def execute_command(request: ExecuteRequest):
         # Execute with timing
         start_time = time.time()
 
+        # SECURITY FIX: Use user-specific workspace directory to prevent cross-user access
+        user_id = session_data.get('user_id', 'default')
+        user_workspace = f"{settings.WORKSPACE_DIR}/users/{user_id}"
+
         exec_instance = container.exec_run(
             ['bash', '-c', command],
-            workdir=settings.WORKSPACE_DIR,
+            workdir=user_workspace,
             user=settings.SANDBOX_USER,
             demux=True
         )
@@ -1072,6 +1088,10 @@ async def upload_file(
                 }
             )
 
+        # SECURITY FIX: Use user-specific workspace directory
+        user_id = session_data.get('user_id', 'default')
+        user_workspace = f"{settings.WORKSPACE_DIR}/users/{user_id}"
+
         # Upload file
         tar_stream = io.BytesIO()
         tar = tarfile.TarFile(fileobj=tar_stream, mode='w')
@@ -1082,11 +1102,11 @@ async def upload_file(
         tar.close()
 
         tar_stream.seek(0)
-        container.put_archive(settings.WORKSPACE_DIR, tar_stream)
+        container.put_archive(user_workspace, tar_stream)
 
         # Fix permissions (handle subdirectories)
         # Use chown -R on parent directory if file is in a subdirectory
-        file_path = f'{settings.WORKSPACE_DIR}/{filename}'
+        file_path = f'{user_workspace}/{filename}'
         if '/' in filename:
             # File is in subdirectory, chown the parent dir recursively
             parent_dir = os.path.dirname(file_path)
@@ -1139,9 +1159,13 @@ def download_file(request: DownloadRequest):
     try:
         container = client.containers.get(session_data['container_id'])
 
+        # SECURITY FIX: Use user-specific workspace directory
+        user_id = session_data.get('user_id', 'default')
+        user_workspace = f"{settings.WORKSPACE_DIR}/users/{user_id}"
+
         # Check if file exists
         check_result = container.exec_run(
-            f'test -f {settings.WORKSPACE_DIR}/{filename}',
+            f'test -f {user_workspace}/{filename}',
             user=settings.SANDBOX_USER
         )
 
@@ -1151,12 +1175,12 @@ def download_file(request: DownloadRequest):
                 detail={
                     'error': 'File not found in workspace',
                     'filename': filename,
-                    'workspace_dir': settings.WORKSPACE_DIR
+                    'workspace_dir': user_workspace
                 }
             )
 
         # Get file as tar archive
-        bits, stat = container.get_archive(f'{settings.WORKSPACE_DIR}/{filename}')
+        bits, stat = container.get_archive(f'{user_workspace}/{filename}')
 
         # Extract file from tar
         tar_stream = io.BytesIO()
@@ -1203,9 +1227,13 @@ def list_files(session_id: str):
     try:
         container = client.containers.get(session_data['container_id'])
 
+        # SECURITY FIX: Use user-specific workspace directory
+        user_id = session_data.get('user_id', 'default')
+        user_workspace = f"{settings.WORKSPACE_DIR}/users/{user_id}"
+
         # List files with metadata
         result = container.exec_run(
-            f'ls -la --time-style=iso {settings.WORKSPACE_DIR}',
+            f'ls -la --time-style=iso {user_workspace}',
             user=settings.SANDBOX_USER
         )
 
