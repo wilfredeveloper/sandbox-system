@@ -71,18 +71,44 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     && rm -rf /var/lib/apt/lists/*
 
+# Install system dependencies for document processing
+RUN apt-get update && apt-get install -y \
+    # PDF processing tools
+    poppler-utils \
+    # Image processing libraries (for Pillow)
+    libjpeg-dev \
+    libpng-dev \
+    libtiff-dev \
+    libfreetype6-dev \
+    liblcms2-dev \
+    libwebp-dev \
+    # XML/HTML parsing (for docx)
+    libxml2-dev \
+    libxslt1-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install commonly used Python packages (as root before switching user)
 RUN pip3 install --no-cache-dir \
+    # Web and API clients
     requests \
+    httpx \
+    aiohttp \
+    beautifulsoup4 \
+    # Data processing
     pandas \
     numpy \
+    openpyxl \
+    # Document processing
+    PyPDF2>=3.0.0 \
+    pdfplumber \
+    python-docx>=1.1.0 \
+    PyMuPDF \
+    # Visualization
     matplotlib \
     pillow \
-    beautifulsoup4 \
+    # Utilities
     pyyaml \
-    python-dotenv \
-    httpx \
-    aiohttp
+    python-dotenv
 
 # Create non-root user with specific UID/GID
 RUN groupadd -g 1000 sandboxuser && \
